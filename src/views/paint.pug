@@ -1,0 +1,26 @@
+link(rel="stylesheet", href="/styles/styles.css")
+.canvasCenter 
+    canvas.canvas#jsCanvas
+    .controls 
+        .controls_range 
+            input#jsRange(type="range", min="0.1", max="0.5", value="2.5", step="0.1")
+        .controls_btns 
+            button#jsMode Fill 
+            button#jsSave Save 
+    
+    .color_s 
+        .controls_colors#jsColors 
+            .controls_color.jsColor(style="background-color:#2c2c2c")
+            .controls_color.jsColor(style="background-color:white")
+            .controls_color.jsColor(style="background-color:red")
+            .controls_color.jsColor(style="background-color:#ff9500")
+            .controls_color.jsColor(style="background-color:#ffcc00")
+            .controls_color.jsColor(style="background-color:#4cd963")
+            .controls_color.jsColor(style="background-color:#5ac8fa")
+            .controls_color.jsColor(style="background-color:#0579ff")
+            .controls_color.jsColor(style="background-color:#5856d6")
+        .controls_btns 
+            button#jsFree Free 
+            button#jsRect RECT 
+            button#jsCircle CIRCLE 
+    script(src="/js/main.js")
