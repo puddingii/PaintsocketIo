@@ -21,5 +21,5 @@ const server = app.listen(PORT, handleListening);
 
 const io = socketIO(server);
 
-io.on("connection", (socket) => socketController(socket));
+io.on("connection", (socket) => socketController(socket, io));
 //client가 접속하면 connection이라는 event를 발생시킴. 그리고 socket은 하나의 socket임

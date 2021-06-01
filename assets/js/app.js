@@ -1,4 +1,7 @@
+import { getSocket } from "./sockets";
+
 const canvas = document.getElementById("jsCanvas");
+const controls = document.getElementById("jsControls");
 const ctx = canvas.getContext("2d");
 const colors = document.getElementsByClassName("jsColor");
 const range = document.getElementById("jsRange");
@@ -9,7 +12,7 @@ const rectBtn = document.getElementById("jsRect");
 const circleBtn = document.getElementById("jsCircle");
 
 const INITIAL_COLOR = "#2c2c2c";
-const CONVAS_SIZE = 700;
+const CONVAS_SIZE = 400;
 
 canvas.width = document.getElementsByClassName("canvas")[0].offsetWidth;
 canvas.height = document.getElementsByClassName("canvas")[0].offsetHeight;
@@ -25,12 +28,12 @@ let painting = false;
 let filling = false;
 let nowShape = "free";
 let rectBegin = {
-    x:0,
-    y:0
+    x: 0,
+    y: 0
 };
 let circleBegin = {
-    x:0,
-    y:0
+    x: 0,
+    y: 0
 };
 
 function stopPainting() {
@@ -41,17 +44,32 @@ function startPainting() {
     painting = true;
 }
 
+const beginPath = (x, y) => {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+};
+
+const strokePath = (x, y, color = null) => {
+    let currentColor = ctx.strokeStyle;
+    if (color !== null) {
+        ctx.strokeStyle = color;
+    }
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.strokeStyle = currentColor;
+};
+
 function onMouseMove(e) {
     const x = e.offsetX;
     const y = e.offsetY;
 
     if(nowShape === "free") {
         if(!painting) {
-            ctx.beginPath();
-            ctx.moveTo(x,y);
+            beginPath(x, y);
+            getSocket().emit(window.events.beginPath, { x, y });
         } else {
-            ctx.lineTo(x, y);
-            ctx.stroke();
+            strokePath(x, y);
+            getSocket().emit(window.events.strokePath, { x, y, color: ctx.strokeStyle });
         }
     } else if(nowShape === "circle") {
         if(!painting) {
@@ -65,7 +83,7 @@ function onMouseDown(e) {
     if(nowShape === "rect") {
         rectBegin.x = e.offsetX;
         rectBegin.y = e.offsetY;
-    } else if(nowShape ==="circle") {
+    } else if(nowShape === "circle") {
         circleBegin.x = e.offsetX;
         circleBegin.y = e.offsetY;
     }
@@ -78,9 +96,9 @@ function onMouseUp(e) {
     
     if(nowShape === "rect") {
         ctx.fillRect(rectBegin.x, rectBegin.y, x-rectBegin.x, y-rectBegin.y);
-    } else if(nowShape ==="circle") {
+    } else if(nowShape === "circle") {
         ctx.beginPath();
-        const radius = Math.sqrt(Math.pow(circleBegin.x-x,2) + Math.pow(circleBegin.y-y,2))/2; 
+        const radius = Math.sqrt(Math.pow(circleBegin.x - x, 2) + Math.pow(circleBegin.y - y, 2)) / 2; 
         ctx.arc((circleBegin.x+x)/2, (circleBegin.y+y)/2, radius, 0, Math.PI * 2, true);
         ctx.fill();
     }
@@ -93,7 +111,7 @@ function handleColor(e) {
 }
 
 function handleRangeChange(e) {
-    const size = e.target.value
+    const size = e.target.value;
     ctx.lineWidth = size;
 }
 
@@ -107,9 +125,19 @@ function handleModeClick() {
     }
 }
 
+const fill = (color = null) => {
+    let currentColor = ctx.fillStyle;
+    if(color !== null) {
+        ctx.fillStyle = color;
+    }
+    ctx.fillRect(0, 0, CONVAS_SIZE, CONVAS_SIZE);
+    ctx.fillStyle = currentColor;
+}
+
 function handleConvasClick() {
     if(filling) {
-        ctx.fillRect(0, 0, CONVAS_SIZE, CONVAS_SIZE);
+        fill();
+        getSocket().emit(window.events.fill, { color: ctx.fillStyle });
     }
 }
 
@@ -153,16 +181,9 @@ function handleCircleClick() {
     }
 }
 
-if(canvas) {
-    canvas.addEventListener("mousemove", onMouseMove);
-    canvas.addEventListener("mousedown", onMouseDown);  //클릭했을때의 이벤트
-    canvas.addEventListener("mouseup", onMouseUp);
-    canvas.addEventListener("mouseleave", stopPainting);
-    canvas.addEventListener("click", handleConvasClick);
-    canvas.addEventListener("contextmenu", handleCM);
-}
-
-Array.from(colors).forEach(color => color.addEventListener("click", handleColor));
+Array.from(colors).forEach(color => 
+    color.addEventListener("click", handleColor)
+);
 
 if(range) {
     range.addEventListener("input", handleRangeChange);
@@ -186,4 +207,35 @@ if(rectBtn) {
 
 if(circleBtn) {
     circleBtn.addEventListener("click", handleCircleClick);
+}
+
+export const handleBeganPath = ({ x, y }) => beginPath(x, y);
+export const handleStrokedPath = ({ x, y, color }) => strokePath(x, y, color);
+export const handleFilled = ({ color }) => fill(color);
+
+export const disableCanvas = () => {
+    canvas.removeEventListener("mousemove", onMouseMove);
+    canvas.removeEventListener("mousedown", onMouseDown);
+    canvas.removeEventListener("mouseup", onMouseUp);
+    canvas.removeEventListener("mouseleave", stopPainting);
+    canvas.removeEventListener("click", handleConvasClick);
+};
+
+export const enableCanvas = () => {
+    canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mousedown", onMouseDown);
+    canvas.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("mouseleave", stopPainting);
+    canvas.addEventListener("click", handleConvasClick);
+};
+
+export const hideControls = () => (controls.style.display = "none");
+
+export const showControls = () => (controls.style.display = "flex");
+
+export const resetCanvas = () => fill("#fff");
+
+if(canvas) {
+    canvas.addEventListener("contextmenu", handleCM);
+    hideControls();
 }
